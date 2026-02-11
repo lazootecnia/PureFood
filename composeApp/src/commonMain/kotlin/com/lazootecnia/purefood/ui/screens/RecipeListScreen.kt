@@ -4,13 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,10 +26,11 @@ import com.lazootecnia.purefood.ui.viewmodels.RecipesViewModel
 @Composable
 fun RecipeListScreen(
     uiState: RecipesUiState,
-    viewModel: RecipesViewModel
+    viewModel: RecipesViewModel,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -39,27 +38,6 @@ fun RecipeListScreen(
             searchQuery = uiState.searchQuery,
             onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) },
             modifier = Modifier.padding(16.dp)
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            FilterChip(
-                selected = uiState.showOnlyFavorites,
-                onClick = { viewModel.toggleShowOnlyFavorites() },
-                label = { Text("❤️ Favoritos") }
-            )
-        }
-
-        CategoryFilterChips(
-            categories = uiState.availableCategories,
-            selectedCategory = uiState.selectedCategory,
-            onCategorySelected = { viewModel.onCategorySelected(it) },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
         if (uiState.filteredRecipes.isEmpty()) {
@@ -91,7 +69,7 @@ fun SearchBar(
             .height(56.dp)
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.medium
             )
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -122,36 +100,6 @@ fun SearchBar(
             ) {
                 Text("✕", style = MaterialTheme.typography.labelMedium)
             }
-        }
-    }
-}
-
-@Composable
-fun CategoryFilterChips(
-    categories: List<String>,
-    selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(0.dp)
-    ) {
-        item {
-            FilterChip(
-                selected = selectedCategory == null,
-                onClick = { onCategorySelected(null) },
-                label = { Text("Todas") }
-            )
-        }
-
-        items(categories) { category ->
-            FilterChip(
-                selected = selectedCategory == category,
-                onClick = { onCategorySelected(category) },
-                label = { Text(category) }
-            )
         }
     }
 }
@@ -194,7 +142,8 @@ fun RecipeCard(
         colors = CardDefaults.cardColors(
             containerColor = if (isFavorite) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier.padding(12.dp)

@@ -14,11 +14,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lazootecnia.purefood.di.ServiceLocator
 import com.lazootecnia.purefood.ui.screens.HomeScreenContent
+import com.lazootecnia.purefood.ui.theme.PureFoodTheme
 
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
+    PureFoodTheme {
         HomeScreenContent()
     }
 }

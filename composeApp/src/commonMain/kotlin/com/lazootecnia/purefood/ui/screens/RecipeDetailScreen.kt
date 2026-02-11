@@ -1,14 +1,18 @@
 package com.lazootecnia.purefood.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.lazootecnia.purefood.data.models.Recipe
 
@@ -19,6 +23,8 @@ fun RecipeDetailContent(
     onToggleFavorite: () -> Unit = {},
     onBack: () -> Unit = {}
 ) {
+    // Estado local para rastrear pasos completados (solo en sesión actual)
+    val completedSteps = remember { mutableStateOf(setOf<Int>()) }
 
     Column(
         modifier = Modifier
@@ -29,15 +35,19 @@ fun RecipeDetailContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 8.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(
+            IconButton(
                 onClick = onBack,
-                modifier = Modifier.width(80.dp)
+                modifier = Modifier.size(48.dp)
             ) {
-                Text("← Atrás")
+                Text(
+                    text = "←",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             Text(
@@ -45,18 +55,18 @@ fun RecipeDetailContent(
                 style = MaterialTheme.typography.titleMedium
             )
 
-            Button(
+            IconButton(
                 onClick = onToggleFavorite,
-                modifier = Modifier.width(80.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-                )
+                modifier = Modifier.size(48.dp)
             ) {
-                Text(if (isFavorite) "❤️ Favorito" else "🤍 Agregar")
+                Text(
+                    text = if (isFavorite) "❤️" else "🤍",
+                    style = MaterialTheme.typography.headlineSmall
+                )
             }
         }
 
-        Divider()
+        HorizontalDivider()
 
         LazyColumn(
             modifier = Modifier
@@ -143,26 +153,76 @@ fun RecipeDetailContent(
                     )
                 }
 
-                items(recipe.steps.mapIndexed { index, step -> index + 1 to step }) { (stepNumber, step) ->
+                items(recipe.steps.mapIndexed { index, step -> index to (index + 1 to step) }) { (stepIndex, pair) ->
+                    val (stepNumber, step) = pair
+                    val isCompleted = completedSteps.value.contains(stepIndex)
+
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                // Toggle el estado del paso
+                                completedSteps.value = if (isCompleted) {
+                                    completedSteps.value - stepIndex
+                                } else {
+                                    completedSteps.value + stepIndex
+                                }
+                            },
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            containerColor = if (isCompleted) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
                         )
                     ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.Top
                         ) {
-                            Text(
-                                text = "Paso $stepNumber",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
+                            // Checkbox
+                            Checkbox(
+                                checked = isCompleted,
+                                onCheckedChange = {
+                                    completedSteps.value = if (it) {
+                                        completedSteps.value + stepIndex
+                                    } else {
+                                        completedSteps.value - stepIndex
+                                    }
+                                },
+                                modifier = Modifier.size(24.dp),
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = MaterialTheme.colorScheme.primary
+                                )
                             )
-                            Text(
-                                text = step,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+
+                            // Contenido del paso
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "Paso $stepNumber",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                )
+                                Text(
+                                    text = step,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (isCompleted) {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                    textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                )
+                            }
                         }
                     }
                 }

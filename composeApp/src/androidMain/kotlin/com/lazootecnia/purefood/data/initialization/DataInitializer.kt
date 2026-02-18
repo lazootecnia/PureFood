@@ -13,6 +13,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.zip.ZipInputStream
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 actual class DataInitializer(private val context: Context) : IDataInitializer {
@@ -20,7 +21,8 @@ actual class DataInitializer(private val context: Context) : IDataInitializer {
     companion object {
         private const val REPO_URL = "https://villaface.duckdns.org/recipes.zip"
         private const val MAX_RETRIES = 3
-        private val TIMEOUT = 30.seconds
+        private val TIMEOUT = 5.minutes  // 43MB necesita más tiempo
+        private const val BUFFER_SIZE = 1024 * 1024  // 1MB chunks
     }
 
     override suspend fun downloadAndInitializeAppData(
@@ -77,17 +79,25 @@ actual class DataInitializer(private val context: Context) : IDataInitializer {
             var downloadedSize = 0L
 
             try {
-                val zipBytes = ByteArrayOutputStream()
-                val buffer = ByteArray(8192)
+                val zipBytes = ByteArrayOutputStream(totalSize.toInt())
+                val buffer = ByteArray(BUFFER_SIZE)
                 var bytesRead: Int
+                var lastProgressUpdate = 0L
 
                 connection.inputStream.use { input ->
                     while (input.read(buffer).also { bytesRead = it } != -1) {
                         zipBytes.write(buffer, 0, bytesRead)
                         downloadedSize += bytesRead
-                        progressCallback(downloadedSize, totalSize)
+
+                        // Update progress cada 1MB para evitar demasiadas actualizaciones
+                        if (downloadedSize - lastProgressUpdate >= BUFFER_SIZE) {
+                            progressCallback(downloadedSize, totalSize)
+                            lastProgressUpdate = downloadedSize
+                        }
                     }
                 }
+                // Notificar progreso final
+                progressCallback(downloadedSize, totalSize)
 
                 // Extraer y validar
                 val recipes = mutableListOf<Recipe>()
@@ -122,10 +132,23 @@ actual class DataInitializer(private val context: Context) : IDataInitializer {
 
                 for ((fileName, imageData) in images) {
                     val recipeId = fileName.substringBeforeLast(".").toIntOrNull() ?: continue
-                    val processed = imageProcessor.processImage(imageData, recipeId).getOrThrow()
 
+                    // Si es pequeño, guardar como está (probablemente ya es WebP o JPG)
                     val outputFile = File(cacheDir, "$recipeId.webp")
-                    outputFile.writeBytes(processed)
+
+                    try {
+                        val processed = imageProcessor.processImage(imageData, recipeId)
+                        processed.fold(
+                            onSuccess = { outputFile.writeBytes(it) },
+                            onFailure = {
+                                // Si falla el procesamiento, guardar original
+                                outputFile.writeBytes(imageData)
+                            }
+                        )
+                    } catch (e: Exception) {
+                        // Si falla completamente, guardar original
+                        outputFile.writeBytes(imageData)
+                    }
                 }
 
                 // Guardar JSON con rutas locales actualizadas

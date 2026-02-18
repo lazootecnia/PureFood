@@ -40,7 +40,7 @@ actual class DataExporter : IDataExporter {
                 val appDir = File(System.getProperty("user.home"), ".purefood")
                 val imagesDir = File(appDir, "recipe_images")
                 val imageFiles = imagesDir.listFiles()?.sortedBy {
-                    it.nameWithoutExtension.toIntOrNull() ?: Int.MAX_VALUE
+                    it.nameWithoutExtension.toLongOrNull() ?: Long.MAX_VALUE
                 } ?: emptyList()
 
                 var processedCount = 0
@@ -50,7 +50,10 @@ actual class DataExporter : IDataExporter {
 
                     val zipEntry = ZipEntry("images/${imageFile.name}")
                     zipOutput.putNextEntry(zipEntry)
-                    imageFile.inputStream().use { it.copyTo(zipOutput) }
+
+                    if (imageFile.exists() && imageFile.length() > 0) {
+                        imageFile.inputStream().use { it.copyTo(zipOutput) }
+                    }
                     zipOutput.closeEntry()
                 }
 

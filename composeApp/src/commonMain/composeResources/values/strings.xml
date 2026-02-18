@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navigation Drawer -->
+    <string name="categories_title">Categorías</string>
+    <string name="all_recipes">Todas las recetas</string>
+    <string name="my_favorites">❤️ Mis Favoritos</string>
+
+    <!-- Recipe Categories -->
+    <string name="category_breakfast">Desayunos</string>
+    <string name="category_lunch">Almuerzo</string>
+    <string name="category_desserts">Postres</string>
+    <string name="category_dressing">Aderezos</string>
+    <string name="category_sauce">Salsas</string>
+    <string name="category_jam">Mermeladas</string>
+    <string name="category_glutenfree">Sin Gluten</string>
+
+    <!-- Recipe Detail Screen -->
+    <string name="ingredients">Ingredientes</string>
+    <string name="steps">Pasos</string>
+    <string name="notes">Notas</string>
+
+    <!-- General -->
+    <string name="app_name">PureFood 🍳</string>
+    <string name="no_recipes_found">No se encontraron recetas</string>
+    <string name="loading">Cargando...</string>
+</resources>

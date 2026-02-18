@@ -22,6 +22,11 @@ import androidx.compose.ui.unit.dp
 import com.lazootecnia.purefood.data.models.Recipe
 import com.lazootecnia.purefood.ui.viewmodels.RecipesUiState
 import com.lazootecnia.purefood.ui.viewmodels.RecipesViewModel
+import com.lazootecnia.purefood.ui.utils.CategoryLocalizer
+import org.jetbrains.compose.resources.stringResource
+import purefood.composeapp.generated.resources.Res
+import purefood.composeapp.generated.resources.ingredients
+import purefood.composeapp.generated.resources.steps
 
 @Composable
 fun RecipeListScreen(
@@ -80,11 +85,12 @@ fun SearchBar(
         TextField(
             value = searchQuery,
             onValueChange = onSearchQueryChanged,
-            placeholder = { Text("Buscar recetas...") },
+            placeholder = { Text("Buscar recetas...", style = MaterialTheme.typography.bodySmall) },
             modifier = Modifier
                 .weight(1f)
-                .height(40.dp),
+                .height(48.dp),
             singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -98,7 +104,7 @@ fun SearchBar(
                 onClick = { onSearchQueryChanged("") },
                 modifier = Modifier.padding(end = 4.dp)
             ) {
-                Text("✕", style = MaterialTheme.typography.labelMedium)
+                Text("×", style = MaterialTheme.typography.labelMedium)
             }
         }
     }
@@ -174,11 +180,16 @@ fun RecipeCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     recipe.categories.take(3).forEach { category ->
+                        val categoryStringRes = CategoryLocalizer.getCategoryStringResource(category)
                         AssistChip(
                             onClick = {},
                             label = {
                                 Text(
-                                    category,
+                                    if (categoryStringRes != null) {
+                                        stringResource(categoryStringRes)
+                                    } else {
+                                        category
+                                    },
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             },
@@ -194,13 +205,13 @@ fun RecipeCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "🥘 ${recipe.ingredients.size} ingredientes",
+                    text = "🥘 ${recipe.ingredients.size} ${stringResource(Res.string.ingredients).lowercase()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Text(
-                    text = "📝 ${recipe.steps.size} pasos",
+                    text = "📝 ${recipe.steps.size} ${stringResource(Res.string.steps).lowercase()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

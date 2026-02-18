@@ -15,6 +15,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.lazootecnia.purefood.data.models.Recipe
+import com.lazootecnia.purefood.ui.utils.CategoryLocalizer
+import org.jetbrains.compose.resources.stringResource
+import purefood.composeapp.generated.resources.Res
+import purefood.composeapp.generated.resources.ingredients
+import purefood.composeapp.generated.resources.notes
+import purefood.composeapp.generated.resources.steps
 
 @Composable
 fun RecipeDetailContent(
@@ -51,7 +57,7 @@ fun RecipeDetailContent(
             }
 
             Text(
-                text = "Receta",
+                text = "🍳",
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -106,9 +112,18 @@ fun RecipeDetailContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             recipe.categories.forEach { category ->
+                                val categoryStringRes = CategoryLocalizer.getCategoryStringResource(category)
                                 AssistChip(
                                     onClick = {},
-                                    label = { Text(category) }
+                                    label = {
+                                        Text(
+                                            if (categoryStringRes != null) {
+                                                stringResource(categoryStringRes)
+                                            } else {
+                                                category
+                                            }
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -120,7 +135,7 @@ fun RecipeDetailContent(
             if (recipe.ingredients.isNotEmpty()) {
                 item {
                     Text(
-                        text = "🥘 Ingredientes (${recipe.ingredients.size})",
+                        text = "🥘 ${stringResource(Res.string.ingredients)} (${recipe.ingredients.size})",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -146,7 +161,7 @@ fun RecipeDetailContent(
             if (recipe.steps.isNotEmpty()) {
                 item {
                     Text(
-                        text = "📝 Preparación (${recipe.steps.size} pasos)",
+                        text = "📝 ${stringResource(Res.string.steps)} (${recipe.steps.size})",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 8.dp)
@@ -232,7 +247,7 @@ fun RecipeDetailContent(
             if (recipe.notes.isNotEmpty()) {
                 item {
                     Text(
-                        text = "📌 Notas",
+                        text = "📌 ${stringResource(Res.string.notes)}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 8.dp)

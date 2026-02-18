@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,6 +17,13 @@ import androidx.compose.ui.unit.dp
 import com.lazootecnia.purefood.di.ServiceLocator
 import com.lazootecnia.purefood.ui.viewmodels.RecipesViewModel
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import purefood.composeapp.generated.resources.Res
+import purefood.composeapp.generated.resources.all_recipes
+import purefood.composeapp.generated.resources.app_name
+import purefood.composeapp.generated.resources.categories_title
+import purefood.composeapp.generated.resources.my_favorites
+import com.lazootecnia.purefood.ui.utils.CategoryLocalizer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,7 +141,7 @@ private fun MainContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PureFood 🍳") },
+                title = { Text(stringResource(Res.string.app_name)) },
                 navigationIcon = {
                     if (showMenuIcon) {
                         IconButton(onClick = onMenuClick) {
@@ -196,16 +204,22 @@ fun DrawerContent(
     showOnlyFavorites: Boolean,
     onToggleFavorites: () -> Unit
 ) {
-    ModalDrawerSheet {
+    ModalDrawerSheet(
+        drawerContainerColor = MaterialTheme.colorScheme.background
+    ) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Categorías",
+            text = stringResource(Res.string.categories_title),
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp),
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        )
 
         LazyColumn(
             modifier = Modifier
@@ -215,31 +229,57 @@ fun DrawerContent(
         ) {
             item {
                 NavigationDrawerItem(
-                    label = { Text("Todas las recetas") },
+                    label = { Text(stringResource(Res.string.all_recipes)) },
                     selected = selectedCategory == null,
                     onClick = { onCategorySelected(null) },
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        unselectedTextColor = MaterialTheme.colorScheme.onBackground
+                    )
                 )
             }
 
             items(categories) { category ->
+                val categoryStringRes = CategoryLocalizer.getCategoryStringResource(category)
                 NavigationDrawerItem(
-                    label = { Text(category) },
+                    label = {
+                        Text(
+                            if (categoryStringRes != null) {
+                                stringResource(categoryStringRes)
+                            } else {
+                                category
+                            }
+                        )
+                    },
                     selected = selectedCategory == category,
-                    onClick = { onCategorySelected(category) }
+                    onClick = { onCategorySelected(category) },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        unselectedTextColor = MaterialTheme.colorScheme.onBackground
+                    )
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         NavigationDrawerItem(
-            label = { Text("❤️ Mis Favoritos") },
+            label = { Text(stringResource(Res.string.my_favorites)) },
             selected = showOnlyFavorites,
             onClick = { onToggleFavorites() },
-            modifier = Modifier.padding(horizontal = 12.dp)
+            modifier = Modifier.padding(horizontal = 12.dp),
+            colors = NavigationDrawerItemDefaults.colors(
+                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                unselectedTextColor = MaterialTheme.colorScheme.onBackground
+            )
         )
     }
 }

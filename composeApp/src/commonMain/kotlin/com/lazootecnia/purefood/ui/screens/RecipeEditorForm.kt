@@ -23,16 +23,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lazootecnia.purefood.data.models.Recipe
+import com.lazootecnia.purefood.ui.components.CategoriesSelector
 
 @Composable
 fun RecipeEditorForm(
     recipe: Recipe,
+    availableCategories: List<String> = emptyList(),
     onSave: (Recipe) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var title by remember { mutableStateOf(recipe.title) }
-    var categoriesText by remember { mutableStateOf(recipe.categories.joinToString(", ")) }
+    var selectedCategories by remember { mutableStateOf(recipe.categories) }
     var imageUrl by remember { mutableStateOf(recipe.imageUrl) }
     var ingredientsText by remember { mutableStateOf(recipe.ingredients.joinToString("\n")) }
     var stepsText by remember { mutableStateOf(recipe.steps.joinToString("\n")) }
@@ -68,13 +70,15 @@ fun RecipeEditorForm(
         }
 
         item {
-            OutlinedTextField(
-                value = categoriesText,
-                onValueChange = { categoriesText = it },
-                label = { Text("Categorías (separadas por coma)") },
-                placeholder = { Text("desayuno, postre, bebida") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+            Text(
+                text = "Categorías",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            CategoriesSelector(
+                availableCategories = availableCategories,
+                selectedCategories = selectedCategories,
+                onCategoriesChanged = { selectedCategories = it }
             )
         }
 
@@ -158,10 +162,7 @@ fun RecipeEditorForm(
                     onClick = {
                         val updatedRecipe = recipe.copy(
                             title = title.trim(),
-                            categories = categoriesText
-                                .split(",")
-                                .map { it.trim() }
-                                .filter { it.isNotBlank() },
+                            categories = selectedCategories,
                             imageUrl = imageUrl.trim(),
                             ingredients = ingredientsText
                                 .split("\n")

@@ -98,6 +98,7 @@ fun AdminScreen(
             // Show recipe editor form
             RecipeEditorForm(
                 recipe = uiState.editingRecipe,
+                availableCategories = uiState.availableCategories,
                 onSave = { viewModel.saveRecipe(it) },
                 onCancel = { viewModel.cancelEditing() },
                 modifier = Modifier.padding(paddingValues)

@@ -1,7 +1,10 @@
 package com.lazootecnia.purefood.di
 
 import com.lazootecnia.purefood.data.createDataStore
+import com.lazootecnia.purefood.data.export.RecipeExporter
+import com.lazootecnia.purefood.data.repositories.AuthRepository
 import com.lazootecnia.purefood.data.repositories.FavoritesRepository
+import com.lazootecnia.purefood.data.repositories.IAuthRepository
 import com.lazootecnia.purefood.data.repositories.IFavoritesRepository
 import com.lazootecnia.purefood.data.repositories.IRecipeDataSource
 import com.lazootecnia.purefood.data.repositories.IRecipeRepository
@@ -14,7 +17,7 @@ object ServiceLocator {
         JsonRecipeDataSource()
     }
 
-    private val recipeRepository: IRecipeRepository by lazy {
+    private val recipeRepository: RecipeRepository by lazy {
         RecipeRepository(recipeDataSource)
     }
 
@@ -26,7 +29,21 @@ object ServiceLocator {
         FavoritesRepository(dataStore)
     }
 
+    private val authRepository: IAuthRepository by lazy {
+        AuthRepository(dataStore)
+    }
+
+    private val recipeExporter by lazy {
+        RecipeExporter()
+    }
+
     fun getRecipesViewModel(): RecipesViewModel {
-        return RecipesViewModel(recipeRepository, favoritesRepository)
+        return RecipesViewModel(
+            recipeRepository,
+            recipeRepository,
+            favoritesRepository,
+            authRepository,
+            recipeExporter
+        )
     }
 }

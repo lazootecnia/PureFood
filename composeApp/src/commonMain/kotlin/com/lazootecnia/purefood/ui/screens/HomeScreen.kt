@@ -34,31 +34,51 @@ fun HomeScreenContent() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    if (uiState.showDetailScreen && selectedRecipe != null) {
-        // Mostrar pantalla de detalle
-        RecipeDetailContent(
-            recipe = selectedRecipe,
-            isFavorite = uiState.favoriteIds.contains(selectedRecipe.id),
-            onToggleFavorite = { viewModel.toggleFavorite(selectedRecipe.id) },
-            onBack = { viewModel.closeRecipeDetail() }
+    // Show authentication dialog if needed
+    if (uiState.showAuthDialog) {
+        AuthenticationDialog(
+            onDismiss = { viewModel.dismissAuthDialog() },
+            onAuthenticate = { password -> viewModel.authenticate(password) },
+            error = uiState.adminError
         )
-    } else {
-        // Mostrar lista de recetas con drawer responsivo
-        BoxWithConstraints {
-            val isLargeScreen = maxWidth >= 840.dp
+    }
 
-            if (isLargeScreen) {
-                LargeScreenLayout(
-                    uiState = uiState,
-                    viewModel = viewModel
-                )
-            } else {
-                SmallScreenLayout(
-                    uiState = uiState,
-                    viewModel = viewModel,
-                    drawerState = drawerState,
-                    scope = scope
-                )
+    // Priority: Admin > Detail > List
+    when {
+        uiState.showAdminScreen -> {
+            AdminScreen(
+                uiState = uiState,
+                viewModel = viewModel,
+                onBack = { viewModel.closeAdminScreen() }
+            )
+        }
+        uiState.showDetailScreen && selectedRecipe != null -> {
+            // Mostrar pantalla de detalle
+            RecipeDetailContent(
+                recipe = selectedRecipe,
+                isFavorite = uiState.favoriteIds.contains(selectedRecipe.id),
+                onToggleFavorite = { viewModel.toggleFavorite(selectedRecipe.id) },
+                onBack = { viewModel.closeRecipeDetail() }
+            )
+        }
+        else -> {
+            // Mostrar lista de recetas con drawer responsivo
+            BoxWithConstraints {
+                val isLargeScreen = maxWidth >= 840.dp
+
+                if (isLargeScreen) {
+                    LargeScreenLayout(
+                        uiState = uiState,
+                        viewModel = viewModel
+                    )
+                } else {
+                    SmallScreenLayout(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        drawerState = drawerState,
+                        scope = scope
+                    )
+                }
             }
         }
     }
@@ -84,6 +104,9 @@ private fun LargeScreenLayout(
                     showOnlyFavorites = uiState.showOnlyFavorites,
                     onToggleFavorites = {
                         viewModel.toggleShowOnlyFavorites()
+                    },
+                    onAdminClick = {
+                        viewModel.requestAdminAccess()
                     }
                 )
             }
@@ -117,6 +140,10 @@ private fun SmallScreenLayout(
                 showOnlyFavorites = uiState.showOnlyFavorites,
                 onToggleFavorites = {
                     viewModel.toggleShowOnlyFavorites()
+                },
+                onAdminClick = {
+                    viewModel.requestAdminAccess()
+                    scope.launch { drawerState.close() }
                 }
             )
         }
@@ -202,37 +229,41 @@ fun DrawerContent(
     selectedCategory: String?,
     onCategorySelected: (String?) -> Unit,
     showOnlyFavorites: Boolean,
-    onToggleFavorites: () -> Unit
+    onToggleFavorites: () -> Unit,
+    onAdminClick: () -> Unit = {}
 ) {
     ModalDrawerSheet(
         drawerContainerColor = MaterialTheme.colorScheme.background
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(Res.string.categories_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp),
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-        )
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp),
+                .fillMaxHeight()
+                .weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(Res.string.categories_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+            }
+
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(Res.string.all_recipes)) },
                     selected = selectedCategory == null,
                     onClick = { onCategorySelected(null) },
-                    modifier = Modifier.padding(bottom = 8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     colors = NavigationDrawerItemDefaults.colors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -255,6 +286,7 @@ fun DrawerContent(
                     },
                     selected = selectedCategory == category,
                     onClick = { onCategorySelected(category) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     colors = NavigationDrawerItemDefaults.colors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -262,24 +294,48 @@ fun DrawerContent(
                     )
                 )
             }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                NavigationDrawerItem(
+                    label = { Text(stringResource(Res.string.my_favorites)) },
+                    selected = showOnlyFavorites,
+                    onClick = { onToggleFavorites() },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        unselectedTextColor = MaterialTheme.colorScheme.onBackground
+                    )
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                NavigationDrawerItem(
+                    label = { Text("🔧 Administración") },
+                    selected = false,
+                    onClick = onAdminClick,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    colors = NavigationDrawerItemDefaults.colors(
+                        unselectedTextColor = MaterialTheme.colorScheme.onBackground
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        NavigationDrawerItem(
-            label = { Text(stringResource(Res.string.my_favorites)) },
-            selected = showOnlyFavorites,
-            onClick = { onToggleFavorites() },
-            modifier = Modifier.padding(horizontal = 12.dp),
-            colors = NavigationDrawerItemDefaults.colors(
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                unselectedTextColor = MaterialTheme.colorScheme.onBackground
-            )
-        )
     }
 }

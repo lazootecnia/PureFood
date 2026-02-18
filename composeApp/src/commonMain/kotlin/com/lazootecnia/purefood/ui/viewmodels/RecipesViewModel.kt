@@ -3,8 +3,11 @@ package com.lazootecnia.purefood.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lazootecnia.purefood.data.models.Recipe
+import com.lazootecnia.purefood.data.repositories.IAuthRepository
 import com.lazootecnia.purefood.data.repositories.IFavoritesRepository
 import com.lazootecnia.purefood.data.repositories.IRecipeRepository
+import com.lazootecnia.purefood.data.repositories.IRecipeWriteRepository
+import com.lazootecnia.purefood.data.export.IRecipeExporter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,12 +24,21 @@ data class RecipesUiState(
     val favoriteIds: Set<Int> = emptySet(),
     val showOnlyFavorites: Boolean = false,
     val selectedRecipe: Recipe? = null,
-    val showDetailScreen: Boolean = false
+    val showDetailScreen: Boolean = false,
+    val showAdminScreen: Boolean = false,
+    val showAuthDialog: Boolean = false,
+    val isAuthenticated: Boolean = false,
+    val editingRecipe: Recipe? = null,
+    val adminError: String? = null,
+    val adminSuccess: String? = null
 )
 
 class RecipesViewModel(
     private val repository: IRecipeRepository,
-    private val favoritesRepository: IFavoritesRepository
+    private val writeRepository: IRecipeWriteRepository,
+    private val favoritesRepository: IFavoritesRepository,
+    private val authRepository: IAuthRepository,
+    private val recipeExporter: IRecipeExporter
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipesUiState())
@@ -35,6 +47,7 @@ class RecipesViewModel(
     init {
         loadRecipes()
         observeFavorites()
+        observeAuthState()
     }
 
     private fun observeFavorites() {
@@ -139,5 +152,163 @@ class RecipesViewModel(
             .flatMap { it.categories }
             .distinct()
             .sorted()
+    }
+
+    private fun observeAuthState() {
+        viewModelScope.launch {
+            authRepository.getAuthState().collect { isAuth ->
+                _uiState.value = _uiState.value.copy(isAuthenticated = isAuth)
+            }
+        }
+    }
+
+    // Admin navigation methods
+    fun requestAdminAccess() {
+        if (_uiState.value.isAuthenticated) {
+            openAdminScreen()
+        } else {
+            _uiState.value = _uiState.value.copy(showAuthDialog = true)
+        }
+    }
+
+    fun dismissAuthDialog() {
+        _uiState.value = _uiState.value.copy(showAuthDialog = false)
+    }
+
+    fun authenticate(password: String) {
+        viewModelScope.launch {
+            val isValid = authRepository.validatePassword(password)
+            if (isValid) {
+                authRepository.setAuthenticated(true)
+                _uiState.value = _uiState.value.copy(
+                    showAuthDialog = false,
+                    adminError = null
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    adminError = "Contraseña incorrecta"
+                )
+            }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authRepository.setAuthenticated(false)
+            _uiState.value = _uiState.value.copy(
+                showAdminScreen = false,
+                editingRecipe = null
+            )
+        }
+    }
+
+    private fun openAdminScreen() {
+        _uiState.value = _uiState.value.copy(
+            showAdminScreen = true,
+            showDetailScreen = false,
+            editingRecipe = null
+        )
+    }
+
+    fun closeAdminScreen() {
+        _uiState.value = _uiState.value.copy(
+            showAdminScreen = false,
+            editingRecipe = null,
+            adminError = null,
+            adminSuccess = null
+        )
+    }
+
+    fun startCreatingRecipe() {
+        _uiState.value = _uiState.value.copy(
+            editingRecipe = Recipe(
+                id = 0,
+                title = "",
+                categories = emptyList(),
+                imageUrl = "",
+                ingredients = emptyList(),
+                steps = emptyList(),
+                notes = emptyList()
+            )
+        )
+    }
+
+    fun startEditingRecipe(recipe: Recipe) {
+        _uiState.value = _uiState.value.copy(editingRecipe = recipe)
+    }
+
+    fun cancelEditing() {
+        _uiState.value = _uiState.value.copy(editingRecipe = null)
+    }
+
+    fun saveRecipe(recipe: Recipe) {
+        viewModelScope.launch {
+            val result = if (recipe.id == 0) {
+                writeRepository.addRecipe(recipe)
+            } else {
+                writeRepository.updateRecipe(recipe)
+            }
+
+            result.fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        editingRecipe = null,
+                        adminSuccess = "Receta guardada correctamente"
+                    )
+                    loadRecipes()
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        adminError = error.message ?: "Error al guardar"
+                    )
+                }
+            )
+        }
+    }
+
+    fun deleteRecipe(recipeId: Int) {
+        viewModelScope.launch {
+            val result = writeRepository.deleteRecipe(recipeId)
+            result.fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        adminSuccess = "Receta eliminada"
+                    )
+                    loadRecipes()
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        adminError = error.message ?: "Error al eliminar"
+                    )
+                }
+            )
+        }
+    }
+
+    fun exportRecipes() {
+        viewModelScope.launch {
+            val result = recipeExporter.exportRecipesToJson(
+                writeRepository.getAllRecipesForExport()
+            )
+            result.fold(
+                onSuccess = { path ->
+                    _uiState.value = _uiState.value.copy(
+                        adminSuccess = "JSON exportado a: $path"
+                    )
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        adminError = "Error al exportar: ${error.message}"
+                    )
+                }
+            )
+        }
+    }
+
+    fun clearAdminMessages() {
+        _uiState.value = _uiState.value.copy(
+            adminError = null,
+            adminSuccess = null
+        )
     }
 }

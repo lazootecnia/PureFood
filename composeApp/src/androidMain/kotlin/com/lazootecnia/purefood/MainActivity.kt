@@ -8,15 +8,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.lazootecnia.purefood.data.initDataStore
 import com.lazootecnia.purefood.data.repositories.initRecipeDataSource
+import com.lazootecnia.purefood.di.ServiceLocator
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Inicializar DataStore y RecipeDataSource
+        // Inicializar DataStore, RecipeDataSource y ServiceLocator
         initDataStore(this)
         initRecipeDataSource(this)
+        ServiceLocator.initialize(this)
 
         setContent {
             App()

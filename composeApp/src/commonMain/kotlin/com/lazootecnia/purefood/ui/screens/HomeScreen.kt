@@ -43,6 +43,26 @@ fun HomeScreenContent() {
         )
     }
 
+    // Show sync progress if syncing
+    if (uiState.isSyncingData) {
+        SyncProgressScreen(
+            title = "⬇️ Descargando recetas...",
+            progress = uiState.syncProgress,
+            progressText = uiState.syncProgressText
+        )
+        return
+    }
+
+    // Show export progress if exporting
+    if (uiState.isExportingData) {
+        SyncProgressScreen(
+            title = "📦 Exportando datos...",
+            progress = uiState.exportProgress,
+            progressText = uiState.exportProgressText
+        )
+        return
+    }
+
     // Priority: Admin > Detail > List
     when {
         uiState.showAdminScreen -> {
@@ -178,6 +198,14 @@ private fun MainContent(
                                 modifier = Modifier.padding(4.dp)
                             )
                         }
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { viewModel.syncRecipesFromRepository() },
+                        enabled = !uiState.isSyncingData
+                    ) {
+                        Text("🔄", style = MaterialTheme.typography.titleMedium)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

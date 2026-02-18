@@ -8,6 +8,8 @@ import com.lazootecnia.purefood.data.repositories.IFavoritesRepository
 import com.lazootecnia.purefood.data.repositories.IRecipeRepository
 import com.lazootecnia.purefood.data.repositories.IRecipeWriteRepository
 import com.lazootecnia.purefood.data.export.IRecipeExporter
+import com.lazootecnia.purefood.data.export.IDataExporter
+import com.lazootecnia.purefood.data.initialization.IDataInitializer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,7 +32,13 @@ data class RecipesUiState(
     val isAuthenticated: Boolean = false,
     val editingRecipe: Recipe? = null,
     val adminError: String? = null,
-    val adminSuccess: String? = null
+    val adminSuccess: String? = null,
+    val isSyncingData: Boolean = false,
+    val syncProgress: Float = 0f,
+    val syncProgressText: String = "",
+    val isExportingData: Boolean = false,
+    val exportProgress: Float = 0f,
+    val exportProgressText: String = ""
 )
 
 class RecipesViewModel(
@@ -38,7 +46,9 @@ class RecipesViewModel(
     private val writeRepository: IRecipeWriteRepository,
     private val favoritesRepository: IFavoritesRepository,
     private val authRepository: IAuthRepository,
-    private val recipeExporter: IRecipeExporter
+    private val recipeExporter: IRecipeExporter,
+    private val dataInitializer: IDataInitializer,
+    private val dataExporter: IDataExporter
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipesUiState())
@@ -310,5 +320,81 @@ class RecipesViewModel(
             adminError = null,
             adminSuccess = null
         )
+    }
+
+    fun syncRecipesFromRepository() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isSyncingData = true,
+                adminError = null
+            )
+
+            val result = dataInitializer.downloadAndInitializeAppData { downloaded, total ->
+                val progress = downloaded.toFloat() / total.toFloat()
+                val progressText = "${formatBytes(downloaded)} / ${formatBytes(total)}"
+                _uiState.value = _uiState.value.copy(
+                    syncProgress = progress,
+                    syncProgressText = progressText
+                )
+            }
+
+            result.fold(
+                onSuccess = {
+                    loadRecipes()
+                    _uiState.value = _uiState.value.copy(
+                        isSyncingData = false,
+                        adminSuccess = "Recetas actualizadas correctamente"
+                    )
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isSyncingData = false,
+                        adminError = error.message ?: "Error al sincronizar"
+                    )
+                }
+            )
+        }
+    }
+
+    fun exportAllData() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isExportingData = true,
+                adminError = null
+            )
+
+            val result = dataExporter.exportAllDataAsZip(
+                recipes = _uiState.value.recipes
+            ) { current, total ->
+                val progress = current.toFloat() / total.toFloat()
+                _uiState.value = _uiState.value.copy(
+                    exportProgress = progress,
+                    exportProgressText = "$current / $total"
+                )
+            }
+
+            result.fold(
+                onSuccess = { path ->
+                    _uiState.value = _uiState.value.copy(
+                        isExportingData = false,
+                        adminSuccess = "Datos exportados a: $path"
+                    )
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isExportingData = false,
+                        adminError = "Error al exportar: ${error.message}"
+                    )
+                }
+            )
+        }
+    }
+
+    private fun formatBytes(bytes: Long): String {
+        return when {
+            bytes < 1024 -> "$bytes B"
+            bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+            else -> "${bytes / (1024 * 1024)} MB"
+        }
     }
 }

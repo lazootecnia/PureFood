@@ -69,12 +69,18 @@ fun AdminScreen(
                     }
                 },
                 actions = {
-                    // Export button
-                    IconButton(onClick = { viewModel.exportRecipes() }) {
-                        Text("📥", style = MaterialTheme.typography.titleMedium)
+                    // Export all data button
+                    IconButton(
+                        onClick = { viewModel.exportAllData() },
+                        enabled = !uiState.isExportingData
+                    ) {
+                        Text("📦", style = MaterialTheme.typography.titleMedium)
                     }
                     // Logout button
-                    IconButton(onClick = { viewModel.logout() }) {
+                    IconButton(
+                        onClick = { viewModel.logout() },
+                        enabled = !uiState.isSyncingData && !uiState.isExportingData
+                    ) {
                         Text("🚪", style = MaterialTheme.typography.titleMedium)
                     }
                 },

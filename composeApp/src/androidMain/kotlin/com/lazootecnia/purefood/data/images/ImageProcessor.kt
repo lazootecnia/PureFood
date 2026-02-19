@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
 actual class ImageProcessor : IImageProcessor {
@@ -36,6 +35,7 @@ actual class ImageProcessor : IImageProcessor {
             if (bitmap != scaledBitmap) {
                 scaledBitmap.recycle()
             }
+            bitmap.recycle()
 
             Result.success(outputStream.toByteArray())
         } catch (e: Exception) {

@@ -55,9 +55,36 @@ class RecipesViewModel(
     val uiState: StateFlow<RecipesUiState> = _uiState.asStateFlow()
 
     init {
-        loadRecipes()
+        initializeAppData()
         observeFavorites()
         observeAuthState()
+    }
+
+    private fun initializeAppData() {
+        viewModelScope.launch {
+            try {
+                // Verificar si hay datos inicializados
+                if (!dataInitializer.isDataInitialized()) {
+                    // Descargar datos de internet
+                    _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+                    val result = dataInitializer.downloadAndInitializeAppData()
+                    if (result.isFailure) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = result.exceptionOrNull()?.message ?: "Error descargando datos"
+                        )
+                        return@launch
+                    }
+                }
+                // Cargar recetas
+                loadRecipes()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "Error desconocido"
+                )
+            }
+        }
     }
 
     private fun observeFavorites() {

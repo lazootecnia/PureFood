@@ -11,7 +11,11 @@ import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-actual class DataExporter(private val context: Context) : IDataExporter {
+actual class DataExporter : IDataExporter {
+
+    companion object {
+        var appContext: Context? = null
+    }
 
     override suspend fun exportAllDataAsZip(
         recipes: List<Recipe>,
@@ -37,7 +41,7 @@ actual class DataExporter(private val context: Context) : IDataExporter {
                     zipOutput.closeEntry()
 
                     // 2. Agregar imágenes
-                    val imagesDir = File(context.filesDir, "recipe_images")
+                    val imagesDir = File(appContext?.filesDir ?: throw RuntimeException("Context no disponible"), "recipe_images")
                     val imageFiles = imagesDir.listFiles()?.sortedBy {
                         it.nameWithoutExtension.toIntOrNull() ?: Int.MAX_VALUE
                     } ?: emptyList()

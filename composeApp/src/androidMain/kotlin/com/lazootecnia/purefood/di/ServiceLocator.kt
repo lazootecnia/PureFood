@@ -3,8 +3,8 @@ package com.lazootecnia.purefood.di
 import android.content.Context
 import com.lazootecnia.purefood.data.createDataStore
 import com.lazootecnia.purefood.data.export.RecipeExporter
-import com.lazootecnia.purefood.data.export.DataExporter
-import com.lazootecnia.purefood.data.initialization.DataInitializer
+import com.lazootecnia.purefood.data.export.DataExporter as DataExporterClass
+import com.lazootecnia.purefood.data.initialization.DataInitializer as DataInitializerClass
 import com.lazootecnia.purefood.data.repositories.AuthRepository
 import com.lazootecnia.purefood.data.repositories.FavoritesRepository
 import com.lazootecnia.purefood.data.repositories.IAuthRepository
@@ -48,11 +48,13 @@ actual object ServiceLocator {
     }
 
     private val dataInitializer by lazy {
-        DataInitializer(context ?: throw RuntimeException("ServiceLocator no inicializado"))
+        DataInitializerClass.appContext = context
+        DataInitializerClass()
     }
 
     private val dataExporter by lazy {
-        DataExporter(context ?: throw RuntimeException("ServiceLocator no inicializado"))
+        DataExporterClass.appContext = context
+        DataExporterClass()
     }
 
     actual fun getRecipesViewModel(): RecipesViewModel {

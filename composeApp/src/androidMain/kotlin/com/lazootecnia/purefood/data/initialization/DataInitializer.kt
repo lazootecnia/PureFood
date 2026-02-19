@@ -3,8 +3,12 @@ package com.lazootecnia.purefood.data.initialization
 import android.content.Context
 import com.lazootecnia.purefood.data.provideFileSystemWithContext
 
-actual class DataInitializer(private val context: Context) : IDataInitializer {
-    private val impl = DataInitializerImpl(provideFileSystemWithContext(context))
+actual class DataInitializer : IDataInitializer {
+    companion object {
+        var appContext: Context? = null
+    }
+
+    private val impl = DataInitializerImpl(provideFileSystemWithContext(appContext ?: throw RuntimeException("Context no disponible")))
 
     override suspend fun downloadAndInitializeAppData(
         progressCallback: (Long, Long) -> Unit

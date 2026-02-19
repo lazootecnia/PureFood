@@ -8,5 +8,5 @@ import java.io.File
 actual fun getLocalRecipeImagePath(recipeId: Int): File {
     val context = LocalContext.current
     val imageName = "${recipeId}.webp"
-    return File(context.cacheDir, "recipe_images/$imageName")
+    return File(context.filesDir, "recipe_images/$imageName")
 }

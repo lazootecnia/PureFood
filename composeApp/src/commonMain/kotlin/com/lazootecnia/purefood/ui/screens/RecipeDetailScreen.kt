@@ -5,23 +5,26 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.lazootecnia.purefood.data.models.Recipe
 import com.lazootecnia.purefood.ui.utils.CategoryLocalizer
+import com.lazootecnia.purefood.ui.components.RecipeImageWithOverlay
 import org.jetbrains.compose.resources.stringResource
 import purefood.composeapp.generated.resources.Res
 import purefood.composeapp.generated.resources.ingredients
 import purefood.composeapp.generated.resources.notes
 import purefood.composeapp.generated.resources.steps
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipeDetailContent(
     recipe: Recipe,
@@ -29,121 +32,67 @@ fun RecipeDetailContent(
     onToggleFavorite: () -> Unit = {},
     onBack: () -> Unit = {}
 ) {
-    // Estado local para rastrear pasos completados (solo en sesión actual)
+    val scrollState = rememberLazyListState()
     val completedSteps = remember { mutableStateOf(setOf<Int>()) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Header con botón atrás y favorito
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Text(
-                    text = "←",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Text(
-                text = "🍳",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            IconButton(
-                onClick = onToggleFavorite,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Text(
-                    text = if (isFavorite) "❤️" else "🤍",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            }
-        }
-
-        HorizontalDivider()
-
+        // Main scrolling content
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            state = scrollState,
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Título
+            // Item 1: Parallax Image Header
             item {
-                Text(
-                    text = recipe.title,
-                    style = MaterialTheme.typography.headlineMedium,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                )
-            }
-
-            // Categorías
-            if (recipe.categories.isNotEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "Categorías",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .wrapContentHeight(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            recipe.categories.forEach { category ->
-                                val categoryStringRes = CategoryLocalizer.getCategoryStringResource(category)
-                                AssistChip(
-                                    onClick = {},
-                                    label = {
-                                        Text(
-                                            if (categoryStringRes != null) {
-                                                stringResource(categoryStringRes)
-                                            } else {
-                                                category
-                                            }
-                                        )
-                                    }
-                                )
+                        .height(300.dp)
+                        .graphicsLayer {
+                            val scrollOffset = if (scrollState.firstVisibleItemIndex == 0) {
+                                scrollState.firstVisibleItemScrollOffset.toFloat()
+                            } else {
+                                300f
                             }
+                            translationY = -(scrollOffset * 0.4f)
+                            val maxFadeScroll = 300f
+                            val alpha = ((maxFadeScroll - scrollOffset) / maxFadeScroll).coerceIn(0f, 1f)
+                            this.alpha = alpha
                         }
-                    }
+                ) {
+                    RecipeImageWithOverlay(
+                        recipeId = recipe.id,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
 
-            // Ingredientes
+            // Item 2: Recipe Meta (categories)
+            if (recipe.categories.isNotEmpty()) {
+                item {
+                    RecipeMeta(categories = recipe.categories)
+                }
+            }
+
+            // Ingredients
             if (recipe.ingredients.isNotEmpty()) {
                 item {
                     Text(
                         text = "🥘 ${stringResource(Res.string.ingredients)} (${recipe.ingredients.size})",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                     )
                 }
 
                 items(recipe.ingredients) { ingredient ->
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
@@ -164,7 +113,7 @@ fun RecipeDetailContent(
                         text = "📝 ${stringResource(Res.string.steps)} (${recipe.steps.size})",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                     )
                 }
 
@@ -175,6 +124,7 @@ fun RecipeDetailContent(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
                             .clickable {
                                 // Toggle el estado del paso
                                 completedSteps.value = if (isCompleted) {
@@ -250,13 +200,15 @@ fun RecipeDetailContent(
                         text = "📌 ${stringResource(Res.string.notes)}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                     )
                 }
 
                 items(recipe.notes) { note ->
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer
                         )
@@ -271,8 +223,93 @@ fun RecipeDetailContent(
                 }
             }
 
+            // Bottom spacer
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+
+        // Sticky TopAppBar overlay
+        TopAppBar(
+            title = {
+                Text(
+                    text = recipe.title,
+                    modifier = Modifier.graphicsLayer {
+                        alpha = getTitleAlpha(scrollState)
+                    }
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Text(
+                        text = "←",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = onToggleFavorite) {
+                    Text(
+                        text = if (isFavorite) "❤️" else "🤍",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(
+                    alpha = getTitleAlpha(scrollState)
+                )
+            ),
+            modifier = Modifier.align(Alignment.TopStart)
+        )
+    }
+}
+
+// Helper: Calculate title alpha based on scroll
+private fun getTitleAlpha(scrollState: androidx.compose.foundation.lazy.LazyListState): Float {
+    if (scrollState.firstVisibleItemIndex > 0) return 1f
+    val scrollPixels = scrollState.firstVisibleItemScrollOffset.toFloat()
+    val maxScrollForAlpha = 300f
+    return (scrollPixels / maxScrollForAlpha).coerceIn(0f, 1f)
+}
+
+
+// Composable: Recipe Meta (categories)
+@Composable
+private fun RecipeMeta(categories: List<String>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Categorías",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            categories.forEach { category ->
+                val categoryStringRes = CategoryLocalizer.getCategoryStringResource(category)
+                AssistChip(
+                    onClick = {},
+                    label = {
+                        Text(
+                            if (categoryStringRes != null) {
+                                stringResource(categoryStringRes)
+                            } else {
+                                category
+                            }
+                        )
+                    }
+                )
             }
         }
     }

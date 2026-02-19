@@ -72,6 +72,19 @@ fun HomeScreenContent() {
         return
     }
 
+    // Show loading indicator while data is loading
+    if (uiState.isLoading && uiState.recipes.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(48.dp)
+            )
+        }
+        return
+    }
+
     // Priority: Admin > Detail > List
     when {
         uiState.showAdminScreen -> {

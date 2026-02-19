@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 data class RecipesUiState(
     val recipes: List<Recipe> = emptyList(),
     val filteredRecipes: List<Recipe> = emptyList(),
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val error: String? = null,
     val selectedCategory: String? = null,
     val searchQuery: String = "",

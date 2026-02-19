@@ -204,6 +204,7 @@ private fun MainContent(
                             Text(
                                 text = "☰",
                                 style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.padding(4.dp)
                             )
                         }
@@ -214,7 +215,7 @@ private fun MainContent(
                         onClick = { viewModel.syncRecipesFromRepository() },
                         enabled = !uiState.isSyncingData
                     ) {
-                        Text("🔄", style = MaterialTheme.typography.titleMedium)
+                        Text("🔄", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

@@ -246,7 +246,7 @@ fun RecipeDetailContent(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Volver",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             },
@@ -259,9 +259,8 @@ fun RecipeDetailContent(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(
-                    alpha = getTitleAlpha(scrollState)
-                )
+                containerColor = MaterialTheme.colorScheme.primary,
+                titleContentColor = MaterialTheme.colorScheme.onPrimary
             ),
             modifier = Modifier.align(Alignment.TopStart)
         )
@@ -270,10 +269,8 @@ fun RecipeDetailContent(
 
 // Helper: Calculate title alpha based on scroll
 private fun getTitleAlpha(scrollState: androidx.compose.foundation.lazy.LazyListState): Float {
-    if (scrollState.firstVisibleItemIndex > 0) return 1f
-    val scrollPixels = scrollState.firstVisibleItemScrollOffset.toFloat()
-    val maxScrollForAlpha = 300f
-    return (scrollPixels / maxScrollForAlpha).coerceIn(0f, 1f)
+    // Siempre mostrar el título con alpha = 1
+    return 1f
 }
 
 

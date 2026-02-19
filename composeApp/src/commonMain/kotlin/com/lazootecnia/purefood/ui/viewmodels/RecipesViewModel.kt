@@ -192,6 +192,7 @@ class RecipesViewModel(
                 authRepository.setAuthenticated(true)
                 _uiState.value = _uiState.value.copy(
                     showAuthDialog = false,
+                    showAdminScreen = true,
                     adminError = null
                 )
             } else {

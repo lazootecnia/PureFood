@@ -37,6 +37,7 @@ kotlin {
             implementation(libs.datastore.preferences)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
+            implementation("org.jetbrains.compose.ui:ui-backhandler:1.10.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

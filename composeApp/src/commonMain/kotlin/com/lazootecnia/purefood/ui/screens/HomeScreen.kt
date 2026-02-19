@@ -1,6 +1,5 @@
 package com.lazootecnia.purefood.ui.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.lazootecnia.purefood.di.ServiceLocator
 import com.lazootecnia.purefood.ui.viewmodels.RecipesViewModel
+import com.lazootecnia.purefood.ui.utils.PlatformBackHandler
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import purefood.composeapp.generated.resources.Res
@@ -36,7 +36,7 @@ fun HomeScreenContent() {
     val scope = rememberCoroutineScope()
 
     // Handle back button press
-    BackHandler(enabled = uiState.showDetailScreen || uiState.showAdminScreen) {
+    PlatformBackHandler(enabled = uiState.showDetailScreen || uiState.showAdminScreen) {
         when {
             uiState.showAdminScreen -> viewModel.closeAdminScreen()
             uiState.showDetailScreen -> viewModel.closeRecipeDetail()

@@ -1,5 +1,6 @@
 package com.lazootecnia.purefood.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,6 +34,14 @@ fun HomeScreenContent() {
     val selectedRecipe = uiState.selectedRecipe
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // Handle back button press
+    BackHandler(enabled = uiState.showDetailScreen || uiState.showAdminScreen) {
+        when {
+            uiState.showAdminScreen -> viewModel.closeAdminScreen()
+            uiState.showDetailScreen -> viewModel.closeRecipeDetail()
+        }
+    }
 
     // Show authentication dialog if needed
     if (uiState.showAuthDialog) {

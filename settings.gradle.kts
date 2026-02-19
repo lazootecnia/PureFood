@@ -1,4 +1,4 @@
-rootProject.name = "purefood"
+rootProject.name = "PureFood"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
